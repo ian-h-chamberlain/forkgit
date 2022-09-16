@@ -120,6 +120,13 @@ def main(configcode=''):
     pre_process_config = True
     exec(configcode)
 
+    if command == 'git' :
+        preserve_isatty = True
+        if originalargs in (['rev-parse', '--absolute-git-dir'],
+                            ['rev-parse', '--show-toplevel']):
+            print(os.getcwd())
+            sys.exit()
+
     remoteargs = list()
     for argument in originalargs:
         translation = translatepath(argument, mountmap)
