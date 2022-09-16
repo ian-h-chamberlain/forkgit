@@ -121,7 +121,7 @@ def main(configcode=''):
     pre_process_config = True
     exec(configcode)
 
-    if command == 'git' :
+    if sshlogin and command == 'git':
         preserve_isatty = True
         if originalargs in (['rev-parse', '--absolute-git-dir'],
                             ['rev-parse', '--show-toplevel']):
