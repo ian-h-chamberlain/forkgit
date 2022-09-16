@@ -225,7 +225,7 @@ def main(configcode=''):
         else:
             ttyoption = '-T'
 
-        argv = [SSH_BINARY]
+        argv = [SSH_BINARY, '-o', 'LogLevel=QUIET']
         if ttyoption == '-T':
             argv += ['-e', 'none']
 
