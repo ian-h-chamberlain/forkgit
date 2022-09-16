@@ -9,6 +9,7 @@ import sys
 import stat
 
 from pathlib import Path
+from subprocess import run
 
 EXIT_COMMAND_NOT_FOUND = 127
 EXIT_SSHFS_HOST_MISMATCH = 1
@@ -126,6 +127,12 @@ def main(configcode=''):
                             ['rev-parse', '--show-toplevel']):
             print(os.getcwd())
             sys.exit()
+        elif originalargs[0] == 'commit':
+            arg, local_path = originalargs[1].split('=')
+            assert arg == '--file'
+            remote_path = os.path.join('/tmp', os.path.basename(local_path))
+            run(['scp', local_path, f'{sshlogin}:{remote_path}'], check=True)
+            originalargs[1] = f'--file={remote_path}'
 
     remoteargs = list()
     for argument in originalargs:
