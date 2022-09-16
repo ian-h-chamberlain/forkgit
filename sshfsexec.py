@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 
 import errno
+import json
 import os
 import pipes
 import re
 import sys
 import stat
 
+from pathlib import Path
+
 EXIT_COMMAND_NOT_FOUND = 127
 EXIT_SSHFS_HOST_MISMATCH = 1
 SSH_BINARY = 'ssh'
+
+CHECKOUTS_JSON = Path(__file__).resolve().parent / 'checkouts.json'
 
 
 def which(binary, path=os.environ.get('PATH', '')):
@@ -57,29 +62,9 @@ def sshfsmountmap():
     remote login ([user@]hostname) and remote path for all remote hosts
     mounted with sshfs.
     """
-    def unescape(path):
-        "Unescape octal-escaped path."
-        def suboctal(match):
-            "Convert octal sequence regex match to a character."
-            return chr(int(match.group(0)[1:], 8))
-        return re.sub("\\\\[0-7]{1,3}", suboctal, path)
-
-    mapping = dict()
-    with open("/proc/self/mountinfo") as iostream:
-        for line in iostream:
-            fields = line.split(' ')
-            fstype = fields[-3]
-            mountpoint = unescape(os.path.abspath(fields[4]))
-
-            if fstype in ('fuse.sshfs', 'nfs4', 'nfs'):
-                remote, path = fields[-2].split(':', 1)
-                device = os.makedev(*(map(int, fields[2].split(':'))))
-                mapping[mountpoint] = (remote, os.path.abspath(unescape(path)))
-
-            else:
-                mapping[mountpoint] = None
-
-    return mapping
+    with CHECKOUTS_JSON.open() as f:
+        checkouts = json.load(f)
+    return checkouts
 
 
 def translatepath(localpath, devicemap):
