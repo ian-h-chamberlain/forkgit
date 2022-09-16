@@ -14,7 +14,7 @@ EXIT_COMMAND_NOT_FOUND = 127
 EXIT_SSHFS_HOST_MISMATCH = 1
 SSH_BINARY = 'ssh'
 
-CHECKOUTS_JSON = Path(__file__).resolve().parent / 'checkouts.json'
+CHECKOUTS_JSON = Path(__file__).resolve().parent.parent / 'checkouts.json'
 
 
 def which(binary, path=os.environ.get('PATH', '')):
