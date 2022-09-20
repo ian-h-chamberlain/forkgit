@@ -128,11 +128,13 @@ def main(configcode=''):
             print(os.getcwd())
             sys.exit()
         elif originalargs[0] == 'commit':
-            arg, local_path = originalargs[1].split('=')
-            assert arg == '--file'
-            remote_path = os.path.join('/tmp', os.path.basename(local_path))
-            run(['scp', local_path, f'{sshlogin}:{remote_path}'], check=True)
-            originalargs[1] = f'--file={remote_path}'
+            for i, originalarg in enumerate(originalargs[1:], 1):
+                if not originalarg.startswith('--file'):
+                    continue
+                arg, local_path = originalarg.split('=')
+                remote_path = os.path.join('/tmp', os.path.basename(local_path))
+                run(['scp', local_path, f'{sshlogin}:{remote_path}'], check=True)
+                originalargs[i] = f'--file={remote_path}'
 
     remoteargs = list()
     for argument in originalargs:
