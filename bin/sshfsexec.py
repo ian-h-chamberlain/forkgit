@@ -9,13 +9,13 @@ import sys
 import stat
 
 from pathlib import Path
+from configparser import ConfigParser
 from subprocess import run
+
 
 EXIT_COMMAND_NOT_FOUND = 127
 EXIT_SSHFS_HOST_MISMATCH = 1
 SSH_BINARY = 'ssh'
-
-CHECKOUTS_JSON = Path(__file__).resolve().parent.parent / 'checkouts.json'
 
 
 def which(binary, path=os.environ.get('PATH', '')):
@@ -57,48 +57,21 @@ def listtoshc(arglist):
     return ' '.join(map(pipes.quote, arglist))
 
 
-def sshfsmountmap():
-    """
-    Return a dictionary mapping mount points to tuples containing the
-    remote login ([user@]hostname) and remote path for all remote hosts
-    mounted with sshfs.
-    """
-    with CHECKOUTS_JSON.open() as f:
-        checkouts = json.load(f)
-    return checkouts
+def fake_section_heading(fp):
+    yield '[fakesection]\n'
+    yield from fp
 
-
-def translatepath(localpath, devicemap):
-    """
-    Determine the remote SSH host and remote path of a file located within
-    an sshfs mount point. The mountmap is a dictionary in the format
-    returned by sshfsmountmap. A tuple containing the remote login
-    ([user@]hostname), remote path, and local mount point for the SSHFS
-    volume is returned if `localpath` is within an SSHFS mount point and
-    `None` otherwise. The `localpath` does not need to exist in order for a
-    translated path to be returned.
-    """
-    testdir = os.path.abspath(localpath)
-    while True:
-        mountpoint = testdir
-        mountinfo = devicemap.get(mountpoint)
-
-        if mountinfo:
-            remotelogin, remoteroot = mountinfo
-            break
-        elif not testdir or testdir == '/':
-            return None
-
-        testdir, _ = os.path.split(testdir)
-
-    relpath = os.path.relpath(os.path.abspath(localpath), mountpoint)
-    remotepath = os.path.join(remoteroot, relpath)
-
-    return remotelogin, remotepath, mountpoint
+    
+def read_dotforkgit(path):
+    dotforkgit = Path(path) / '.forkgit'
+    if not dotforkgit.exists():
+        return {}
+    cp = ConfigParser()
+    cp.read_file(fake_section_heading(dotforkgit.open()))
+    return cp['fakesection']
 
 
 def main(configcode=''):
-    mountmap = sshfsmountmap()
     command, originalargs = os.path.basename(sys.argv[0]), sys.argv[1:]
     envpassthrough = dict()
     environment = dict(os.environ)
@@ -109,10 +82,15 @@ def main(configcode=''):
     preserve_isatty = False
     coerce_remote_execution = False
 
+    config = read_dotforkgit(os.getcwd())
+
     # Figure out where the current working directory is on the remote system.
-    cwdtranslation = translatepath(os.getcwd(), mountmap)
-    if cwdtranslation:
-        sshlogin, remotecwd, basemountpoint = cwdtranslation
+    local_root = os.getcwd()
+    remote_host = config.get('remote-host')
+    if remote_host:
+        remote_root = config['remote-root']
+        sshlogin = remote_host
+        remotepath = remote_root
         sshhost = sshlogin.split('@')[0] if '@' in sshlogin else sshlogin
     else:
         sshlogin = None
@@ -138,50 +116,7 @@ def main(configcode=''):
 
     remoteargs = list()
     for argument in originalargs:
-        translation = translatepath(argument, mountmap)
-
-        if not translation:
-            remoteargs.append(argument)
-            continue
-
-        login, transpath, argmountpoint = translation
-        arghost = login.split('@')[0] if '@' in login else login
-
-        # Paths used with coerced execution must be absolute
-        if coerce_remote_execution and not cwdtranslation:
-            argument = transpath
-
-        if not sshlogin and coerce_remote_execution:
-            sshlogin = login
-            basemountpoint = argmountpoint
-            sshhost = sshlogin.split('@')[0] if '@' in sshlogin else sshlogin
-        elif sshlogin and arghost != sshhost:
-            print("SSHFS host mismatch.", file=sys.stderr)
-            exit(EXIT_SSHFS_HOST_MISMATCH)
-
-        # If the argument is an absolute path or a relative path that crosses
-        # over to a different SSHFS mount point, use an absolute path for the
-        # remote command.
-        if sshlogin and basemountpoint != argmountpoint or argument[0] == '/':
-            remoteargs.append(transpath)
-
-        else:
-            if cwdtranslation:
-                # Ensure the mount point is not referenced by its local name,
-                # e.g. ../../mountpoint/subfolder. If is is, switch to an
-                # absolute path.
-                argupdirs = os.path.normpath(argument).split('/').count('..')
-                highestreference = os.path.abspath(('../' * (argupdirs - 1)))
-                refmount = mountmap.get(highestreference)
-                if refmount:
-                    remotebasename = os.path.basename(refmount[1])
-                    localmountname = os.path.basename(highestreference)
-
-                if argupdirs and refmount and remotebasename != localmountname:
-                    remoteargs.append(transpath)
-                    continue
-
-            remoteargs.append(argument)
+        remoteargs.append(argument)
 
     # Second execution of configuration code after processing arguments.
     pre_process_config = False
@@ -196,7 +131,7 @@ def main(configcode=''):
         for variable, value in envpassthrough.items():
             executed = '%s=%s %s' % (variable, pipes.quote(value), executed)
 
-        if cwdtranslation:
+        if remote_root:
             # If the current working directory is inside an SSHFS mount, cd
             # into the corresponding remote directory first. Why the brackets?
             # When data is piped into cd without cd being in a command group,
@@ -207,7 +142,7 @@ def main(configcode=''):
             #   ~% echo example | { cd / && pwd; }
             #   /
             #
-            quotedremotecwd = pipes.quote(remotecwd)
+            quotedremotecwd = pipes.quote(remote_root)
             sshcommand = '{ cd %s && %s; }' % (quotedremotecwd, executed)
         else:
             sshcommand = executed

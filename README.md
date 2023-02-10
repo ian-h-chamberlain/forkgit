@@ -22,20 +22,19 @@ Usage
 
 1. Clone this repository.
 
-2. Locally, create empty directories corresponding to git checkout directories
-   on the remote server.
-
-3. Adjust checkouts.json to map these directories. The format is
+2. For each git checkout on the remote server, create a directory locally and
+   create a file `.gitfork` inside with these contents (replacing values within
+   `<>`):
    ```
-   "<path to empty dir on local machine>":
-       ["<server hostname>", "<path to git checkout dir on server>"]
+   remote-host = <remote machine's hostname>
+   remote-root = <absolute path to git checkout on the remote machine>
    ```
-   (remember to append a comma to all entries but the last)
 
 4. In the Fork Git preferences, add this repository's `bin/git` as a custom git
    instance.
 
-5. Open one of the empty directories that you mapped in checkouts.json
+5. Open the directories that represent the git checkouts on the remote machine
+   in Fork.
 
 
 To speed up interaction with remote checkouts, you can configure SSH multiplexing
