@@ -71,7 +71,7 @@ def read_dotforkgit(path):
     return cp['fakesection']
 
 
-def main(configcode=''):
+def main():
     command, originalargs = os.path.basename(sys.argv[0]), sys.argv[1:]
     envpassthrough = dict()
     environment = dict(os.environ)
@@ -99,9 +99,6 @@ def main(configcode=''):
     else:
         sshlogin = None
 
-    # First execution of configuration code prior to processing arguments.
-    pre_process_config = True
-    exec(configcode)
 
     if sshlogin and command == 'git':
         preserve_isatty = True
@@ -121,10 +118,6 @@ def main(configcode=''):
     remoteargs = list()
     for argument in originalargs:
         remoteargs.append(argument)
-
-    # Second execution of configuration code after processing arguments.
-    pre_process_config = False
-    exec(configcode)
 
     if sshlogin:
         # If the command should be executed on a remote server, generate the
@@ -203,15 +196,4 @@ def main(configcode=''):
 
 
 if __name__ == "__main__":
-    defaultconfigpath = os.path.expanduser('~/.sshfsexec.conf')
-    configpath = os.environ.get('SSHFSEXEC_CONFIG', defaultconfigpath)
-
-    try:
-        with open(configpath) as iostream:
-            configcode = iostream.read()
-    except IOError as e:
-        if e.errno != errno.ENOENT:
-            raise
-        configcode = ''
-
-    main(configcode)
+    main()
