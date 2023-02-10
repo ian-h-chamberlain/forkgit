@@ -5,13 +5,11 @@ This is a fork of [sshfsexec](https://github.com/ericpruitt/sshfsexec) to allow
 [Fork](https://fork.dev/) on macOS to interact with remote git checkouts over SSH.
 
 Known issues:
-- not thoroughly tested; expect trouble!
 - the current branch and HEAD commit are not indicated properly
   (commits on the current branch are normally displayed in black and the HEAD
    commit should be displayed in bold text)
 - removing untracked files doesn't work
-- interactive rebase is not yet working
-- you may need to refresh the Local Changes view explicitly (Cmd+R)
+- interactive rebase is not working
 - not tested at all on Windows and thus unlikely to work there
 
 See also https://github.com/fork-dev/Tracker/issues/929.
