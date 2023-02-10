@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 
 import errno
-import json
 import os
 import pipes
 import re
+import subprocess
 import sys
 import stat
 
 from pathlib import Path
 from configparser import ConfigParser
+from shutil import which
 from subprocess import run
 
 
@@ -172,27 +173,21 @@ def main():
 
         argv += [sshlogin, ttyoption, sshcommand]
 
-    else:
-        # If the command does not interact with any SSHFS-mounted paths, run
-        # the executable that the script replaced.
-        path = os.environ.get('PATH', '')
-        while path:
-            replacedbinary = which(command, path)
-
-            if replacedbinary:
-                if os.path.samefile(__file__, replacedbinary):
-                    if ':' in path:
-                        _, path = path.split(':', 1)
-                        continue
-                else:
-                    break
-
-            print("sshfsexec: %s: command not found" % command)
-            exit(EXIT_COMMAND_NOT_FOUND)
-
-        argv = [replacedbinary] + originalargs
+    else:   # local checkout
+        real_git = which('git')
+        if real_git == __file__:
+            raise ValueError("forkgit's git should not be in PATH!")
+        if not real_git:
+            raise SystemExit(EXIT_COMMAND_NOT_FOUND)
+        argv = [real_git] + originalargs
+        
+        # Fork sets GIT_EXEC_PATH (why?), breaking forkgit for local checkouts
+        # https://github.com/fork-dev/Tracker/issues/929#issuecomment-1373919511
+        environment.pop('GIT_EXEC_PATH')
 
     os.execvpe(argv[0], argv, environment)
+
+
 
 
 if __name__ == "__main__":
