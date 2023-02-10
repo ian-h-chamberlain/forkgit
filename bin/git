@@ -82,10 +82,14 @@ def main(configcode=''):
     preserve_isatty = False
     coerce_remote_execution = False
 
-    config = read_dotforkgit(os.getcwd())
+    local_root = os.getcwd()
+    config = read_dotforkgit(local_root)
+
+    git_dir = config.get('git-dir')
+    if git_dir:
+        environment['GIT_DIR'] = git_dir
 
     # Figure out where the current working directory is on the remote system.
-    local_root = os.getcwd()
     remote_host = config.get('remote-host')
     if remote_host:
         remote_root = config['remote-root']

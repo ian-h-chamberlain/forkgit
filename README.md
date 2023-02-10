@@ -1,10 +1,12 @@
-sshgit
-======
+forkgit
+=======
 
-This is a fork of [sshfsexec](https://github.com/ericpruitt/sshfsexec) to allow
-[Fork](https://fork.dev/) on macOS to interact with remote git checkouts over SSH.
+forkgit is a git wrapper that enables [Fork](https://fork.dev/) to:
+- open and interact with remote git checkouts over SSH
+- set a [custom `.git` directory](https://git-scm.com/docs/git#Documentation/git.txt---git-dirltpathgt)
+  for specific checkouts
 
-Known issues:
+Known issues with remote checkouts:
 - the current branch and HEAD commit are not indicated properly
   (commits on the current branch are normally displayed in black and the HEAD
    commit should be displayed in bold text)
@@ -15,10 +17,12 @@ Known issues:
 See also https://github.com/fork-dev/Tracker/issues/929.
 
 
-Usage
------
+Remote checkouts
+----------------
 
 1. Clone this repository.
+
+2. Link your local git's libexec/git-core to
 
 2. For each git checkout on the remote server, create a directory locally and
    create a file `.gitfork` inside with these contents (replacing values within
@@ -41,4 +45,40 @@ in your `~/.ssh/config` for the host you're connecting to. See the [OpenSSH Wiki
 for more information.
 
 
-See sshfsexec.md for more information on sshfsexec.
+Custom .git directory
+---------------------
+
+This is useful when you want to track your dot-files in a git repository, but
+don't want command-line git to know that your home directory is a git checkout.
+
+To set this up:
+
+1. Run `git init` in your home directory.
+
+2. Rename the generated `.git` directory to `.dotfiles.git`.
+
+3. Create a `.forkgit` file in your home-directory with these contents:
+   ```
+   git-dir = .dotfiles.git
+   ```
+
+4. Open your home directory in Fork.
+
+You will want to create a `.gitignore` file to ignore most of the files in your
+home directory to make this workable. For example:
+
+```
+*
+!.*
+!/.config/**/*
+!/.ssh/config
+.DS_Store
+.bash_history
+.cache/
+.lesshst
+.python_history
+.viminfo
+.wget-hsts
+.zsh_history
+.Xauthority
+```
