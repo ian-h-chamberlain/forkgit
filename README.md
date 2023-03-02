@@ -22,8 +22,6 @@ Remote checkouts
 
 1. Clone this repository.
 
-2. Link your local git's libexec/git-core to
-
 2. For each git checkout on the remote server, create a directory locally and
    create a file `.gitfork` inside with these contents (replacing values within
    `<>`):
