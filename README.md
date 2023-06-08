@@ -7,9 +7,6 @@ forkgit is a git wrapper that enables [Fork](https://fork.dev/) to:
   for specific checkouts
 
 Known issues with remote checkouts:
-- the current branch and HEAD commit are not indicated properly
-  (commits on the current branch are normally displayed in black and the HEAD
-   commit should be displayed in bold text)
 - removing untracked files doesn't work
 - interactive rebase is not working
 - not tested at all on Windows and thus unlikely to work there

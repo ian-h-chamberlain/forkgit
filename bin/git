@@ -115,6 +115,14 @@ def main():
                 remote_path = os.path.join('/tmp', os.path.basename(local_path))
                 run(['scp', local_path, f'{sshlogin}:{remote_path}'], check=True)
                 originalargs[i] = f'--file={remote_path}'
+    
+    # Fork checks the .git/logs/HEAD timestamp for highlighting the HEAD commit
+    if ((command == 'git' and originalargs[0] in ['commit', 'fetch', 'pull'])
+            and (sshlogin or git_dir == '.')):
+        for logs_head in ('.git/logs/HEAD', 'logs/HEAD'):
+            dotgit_logs_head = Path(local_root) / logs_head
+            dotgit_logs_head.parent.mkdir(parents=True, exist_ok=True)
+            dotgit_logs_head.touch()
 
     remoteargs = list()
     for argument in originalargs:
