@@ -2,8 +2,8 @@
 
 import errno
 import os
-import pipes
 import re
+import shlex
 import subprocess
 import sys
 import stat
@@ -55,7 +55,7 @@ def listtoshc(arglist):
     >>> print(listtoshc(['cat', '.profile', '`rm -rf *`']))
     cat .profile '`rm -rf *`'
     """
-    return ' '.join(map(pipes.quote, arglist))
+    return ' '.join(map(shlex.quote, arglist))
 
 
 def fake_section_heading(fp):
@@ -127,7 +127,7 @@ def main():
 
         # Prepend environment variable declarations
         for variable, value in envpassthrough.items():
-            executed = '%s=%s %s' % (variable, pipes.quote(value), executed)
+            executed = '%s=%s %s' % (variable, shlex.quote(value), executed)
 
         if remote_root:
             # If the current working directory is inside an SSHFS mount, cd
@@ -140,7 +140,7 @@ def main():
             #   ~% echo example | { cd / && pwd; }
             #   /
             #
-            quotedremotecwd = pipes.quote(remote_root)
+            quotedremotecwd = shlex.quote(remote_root)
             sshcommand = '{ cd %s && %s; }' % (quotedremotecwd, executed)
         else:
             sshcommand = executed
