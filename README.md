@@ -6,7 +6,14 @@ forkgit is a git wrapper that enables [Fork](https://fork.dev/) to:
 - set a [custom `.git` directory](https://git-scm.com/docs/git#Documentation/git.txt---git-dirltpathgt)
   for specific checkouts
 
-Recent versions of Fork started accessing more of the files in the .git directory directly, making it impossible for forkgit to intervene. For this reason, it is recommended to use [Fork 2.31.2](https://cdn.fork.dev/mac/Fork-2.31.2.dmg) in combination with forkgit. You can rename this _Fork.app_ to _Fork-2.31.2.app_ if you still want to use the most recent version of Fork local checkouts, but note that application settings will be shared between these Fork versions.
+Recent versions of Fork started accessing more of the files in the .git directory directly, making it impossible for forkgit to intervene. For this reason, it is recommended to use [Fork 2.31.2](https://cdn.fork.dev/mac/Fork-2.31.2.dmg) in combination with forkgit. You can rename this _Fork.app_ to _RemoteFork.app_ if you still want to use the most recent version of Fork local checkouts. Please note that application settings will be shared between these Fork versions, unless you edit Info.plist inside RemoteFork.app and change these entries:
+- CFBundleName: Fork &rarr; RemoteFork
+- CFBundleIdentifier and CFBundleURLName: com.DanPristupov.Fork &rarr; com.DanPristupov.RemoteFork
+
+You need to sign the altered application bundle to be able to run it:
+```
+codesign --force --deep --sign - /Applications/RemoteFork.app
+```
 
 Known issues with remote checkouts:
 - removing untracked files doesn't work
