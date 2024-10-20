@@ -20,7 +20,7 @@ EXIT_SSHFS_HOST_MISMATCH = 1
 SSH_BINARY = 'ssh'
 
 
-def which(binary, path=os.environ.get('PATH', '')):
+def which(binary, local_root, path=os.environ.get('PATH', '')):
     """
     Return the absolute path of an executable with the basename defined by
     `binary.` If an absolute path is given for `binary`, then the value is
@@ -33,6 +33,10 @@ def which(binary, path=os.environ.get('PATH', '')):
             return binary
         return None
 
+    if local_root.startswith(r"\\wsl"):
+        distro = Path(local_root).drive.split('\\')[-1]
+        return ["wsl.exe", "--cd", local_root, "-d", distro, "git"]
+
     for folder in path.split(';'):
         # print(folder)
         try:
@@ -43,7 +47,7 @@ def which(binary, path=os.environ.get('PATH', '')):
         if binary in contents:
             binarypath = os.path.abspath(os.path.join(folder, binary))
             if os.access(binarypath, os.X_OK):
-                return binarypath
+                return [binarypath]
 
     return None
 
@@ -64,7 +68,7 @@ def fake_section_heading(fp):
     yield '[fakesection]\n'
     yield from fp
 
-    
+
 def read_dotforkgit(path):
     dotforkgit = Path(path) / '.forkgit'
     if not dotforkgit.exists():
@@ -118,7 +122,7 @@ def main():
                 remote_path = os.path.join('/tmp', os.path.basename(local_path))
                 run(['scp', local_path, f'{sshlogin}:{remote_path}'], check=True)
                 originalargs[i] = f'--file={remote_path}'
-    
+
     # Fork checks the .git/logs/HEAD timestamp for highlighting the HEAD commit
     if ((command == GIT_BINARY and originalargs[0] in ['commit', 'fetch', 'pull'])
             and (sshlogin or git_dir == '.')):
@@ -185,7 +189,7 @@ def main():
         argv += [sshlogin, ttyoption, sshcommand]
 
     else:   # local checkout
-        real_git = which(GIT_BINARY)
+        real_git = which(GIT_BINARY, local_root)
         try:
             this_git = __file__
         except NameError:
@@ -201,7 +205,11 @@ def main():
         except KeyError:
             pass
 
-    process = run([real_git, *originalargs], env=environment)
+    if real_git[0] == "wsl.exe":
+        environment["WSLENV"] = environment.get("WSLENV", "") + ":GIT_DIR/u"
+
+    cmd = real_git + originalargs
+    process = run(cmd, env=environment)
     raise SystemExit(process.returncode)
 
 
