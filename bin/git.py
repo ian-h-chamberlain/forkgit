@@ -63,7 +63,9 @@ def main():
 
     git_dir = config.get('git-dir')
     if git_dir:
-        environment['GIT_DIR'] = git_dir
+        git_dir = Path(local_root).absolute() / git_dir
+        environment['GIT_DIR'] = str(git_dir)
+        # print("git_dir", git_dir)
 
     # Figure out where the current working directory is on the remote system.
     remote_host = config.get('remote-host')
@@ -174,6 +176,22 @@ def main():
             environment.pop('GIT_EXEC_PATH')
         except KeyError:
             pass
+
+    if local_root.startswith(r'\\wsl'):
+        # Run a WSL git binary instead of Windows' git.exe
+        wsl_distro = Path(local_root).drive.split('\\')[-1]
+        argv[:1] = ['wsl.exe', '--distribution', wsl_distro, '--cd', local_root, 'git']
+
+        if git_dir:
+            # Assume the git_dir is also under WSL if the local_root is;
+            # Doing otherwise is probably a Bad Idea for performance anyway.
+
+            # Tell WSL to convert the GIT_DIR from Windows to a Linux path
+            wslenv = os.environ.get('WSLENV', '')
+            if wslenv:
+                wslenv += ':'
+
+            environment['WSLENV'] =  wslenv + ':GIT_DIR/p'
 
     process = run(argv, env=environment)
     raise SystemExit(process.returncode)
