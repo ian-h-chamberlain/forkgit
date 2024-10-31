@@ -36,7 +36,7 @@ def fake_section_heading(fp):
     yield '[fakesection]\n'
     yield from fp
 
-    
+
 def read_dotforkgit(path):
     dotforkgit = Path(path) / '.forkgit'
     if not dotforkgit.exists():
@@ -90,7 +90,7 @@ def main():
                 remote_path = os.path.join('/tmp', os.path.basename(local_path))
                 run(['scp', local_path, f'{sshlogin}:{remote_path}'], check=True)
                 originalargs[i] = f'--file={remote_path}'
-    
+
     # Fork checks the .git/logs/HEAD timestamp for highlighting the HEAD commit
     if ((command == LOCAL_GIT_BINARY and originalargs[0] in ['commit', 'fetch', 'pull'])
             and (sshlogin or git_dir == '.')):
