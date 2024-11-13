@@ -45,6 +45,14 @@ def read_dotforkgit(path):
     cp.read_file(fake_section_heading(dotforkgit.open()))
     return cp['fakesection']
 
+def bash():
+    """
+    TODO: proper wrapper script to allow for "custom commands" feature in Fork
+    Probably should use the same finding logic as for git since they are siblings.
+    """
+
+def sh():
+    """ TODO """
 
 def main():
     command, originalargs = os.path.basename(sys.argv[0]), sys.argv[1:]
