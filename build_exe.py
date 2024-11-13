@@ -7,6 +7,9 @@ which also makes it somewhat faster to launch vs a pyinstaller executable.
 
 Requires distlib, which can be installed with pip, or may already be installed
 in your environment.
+
+It's possible this would also work to create script helper on non-Windows platforms,
+but in those cases symlinks should work fine and you probably don't need this helper.
 """
 
 from distlib.scripts import ScriptMaker

@@ -45,14 +45,51 @@ def read_dotforkgit(path):
     cp.read_file(fake_section_heading(dotforkgit.open()))
     return cp['fakesection']
 
+
+def _find_git():
+    real_git = which(LOCAL_GIT_BINARY)
+    try:
+        this_git = __file__
+    except NameError:
+        this_git = sys.executable
+    if real_git == this_git:
+        raise ValueError("forkgit's git should not be in PATH!")
+    if not real_git:
+        raise SystemExit(EXIT_COMMAND_NOT_FOUND)
+
+    return real_git
+
+
+def _run_shell(shell: str):
+    git_exe = Path(_find_git())
+
+    # TODO: is it a bad idea to search all these paths? Not sure how to find them otherwise
+    search_paths = [
+        git_exe.parent,  # sibling of ...\Git\bin\git.exe
+        git_exe.parent.parent / "bin",  # Relative to ...\Git\cmd\git.exe
+        git_exe.parent.parent.parent / "bin",  # Relative to ...\Git\mingw64\bin\git.exe
+    ]
+
+    shell_exe = which(
+        shell,
+        path=os.pathsep.join(str(p) for p in search_paths),
+    )
+    if not shell_exe:
+        raise RuntimeError(f"unable to find `{shell}` (expected it in {search_paths}")
+
+    argv = sys.argv[:]
+    argv[0] = shell_exe
+    result = run(argv)
+    sys.exit(result.returncode)
+
+
 def bash():
-    """
-    TODO: proper wrapper script to allow for "custom commands" feature in Fork
-    Probably should use the same finding logic as for git since they are siblings.
-    """
+    _run_shell("bash")
+
 
 def sh():
-    """ TODO """
+    _run_shell("sh")
+
 
 def main():
     command, originalargs = os.path.basename(sys.argv[0]), sys.argv[1:]
@@ -166,16 +203,8 @@ def main():
 
         argv += [sshlogin, ttyoption, sshcommand]
 
-    else:   # local checkout
-        real_git = which(LOCAL_GIT_BINARY)
-        try:
-            this_git = __file__
-        except NameError:
-            this_git = sys.executable
-        if real_git == this_git:
-            raise ValueError("forkgit's git should not be in PATH!")
-        if not real_git:
-            raise SystemExit(EXIT_COMMAND_NOT_FOUND)
+    else:  # local checkout
+        real_git = _find_git()
         argv = [real_git, *originalargs]
 
         # Older versions of Fork sets GIT_EXEC_PATH (why?), breaking forkgit for local checkouts
