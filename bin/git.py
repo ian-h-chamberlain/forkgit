@@ -12,6 +12,7 @@ from pathlib import Path
 from configparser import ConfigParser
 from shutil import which
 from subprocess import run
+import tempfile
 
 
 LOCAL_GIT_BINARY = 'git.exe' if os.name == 'nt' else 'git'
@@ -217,7 +218,7 @@ def main():
     if local_root.startswith(r'\\wsl'):
         # Run a WSL git binary instead of Windows' git.exe
         wsl_distro = Path(local_root).drive.split('\\')[-1]
-        argv[:1] = ['wsl.exe', '--distribution', wsl_distro, '--cd', local_root, 'git']
+        cmd = ['git']
 
         if git_dir:
             # Assume the git_dir is also under WSL if the local_root is;
@@ -228,7 +229,14 @@ def main():
             if wslenv:
                 wslenv += ':'
 
-            environment['WSLENV'] =  wslenv + ':GIT_DIR/p'
+            environment['WSLENV'] = wslenv + ':GIT_DIR/p'
+
+            if originalargs[0] == 'rev-parse':
+                # This is sorta janky, but seems to be the best way to get rev-parse
+                # to print windows-style paths.
+                cmd = ['--exec', 'sh', '-lc', f'git "$@" | xargs -n 1 wslpath -w', '--']
+
+        argv[:1] = ['wsl.exe', '-d', wsl_distro, '--cd', local_root] + cmd
 
     process = run(argv, env=environment)
     raise SystemExit(process.returncode)
